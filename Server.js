@@ -1,61 +1,40 @@
-// server.js
-import express from 'express';
-import { RtcTokenBuilder, RtcRole } from 'agora-access-token'; // Example using Agora SFU
-import { WebSocketServer } from 'ws';
+// Server.js
+const express = require('express');
+const http = require('http');
+const { Server } = require('socket.io');
 
 const app = express();
-app.use(express.json());
-
-const AGORA_APP_ID = process.env.AGORA_APP_ID;
-const AGORA_APP_CERTIFICATE = process.env.AGORA_APP_CERTIFICATE;
-
-// Generate secure RTC token for client media stream
-app.post('/api/get-rtc-token', (req, res) => {
-  const { channelName, uid } = req.body;
-  const role = RtcRole.PUBLISHER;
-  const expirationTimeInSeconds = 3600;
-  const currentTimestamp = Math.floor(Date.now() / 1000);
-  const privilegeExpiredTs = currentTimestamp + expirationTimeInSeconds;
-
-  const token = RtcTokenBuilder.buildTokenWithUid(
-    AGORA_APP_ID,
-    AGORA_APP_CERTIFICATE,
-    channelName,
-    uid,
-    role,
-    privilegeExpiredTs
-  );
-
-  return res.json({ token, channelName, uid });
+const server = http.createServer(app);
+const io = new Server(server, {
+  cors: { origin: '*', methods: ['GET', 'POST'] }
 });
 
-const server = app.listen(5000, () => console.log('Server running on port 5000'));
+io.on('connection', (socket) => {
+  console.log('user connected:', socket.id);
 
-// WebSocket Signaling for Call Initiation
-const wss = new WebSocketServer({ server });
-const connectedClients = new Map();
-
-wss.on('connection', (ws) => {
-  ws.on('message', (message) => {
-    const data = JSON.parse(message);
-    
-    if (data.type === 'REGISTER') {
-      connectedClients.set(data.userId, ws);
-    } 
-    
-    // Relay call invite to target recipient
-    if (data.type === 'INVITE_CALL') {
-      const recipientWs = connectedClients.get(data.recipientId);
-      if (recipientWs) {
-        recipientWs.send(JSON.stringify({
-          type: 'INCOMING_CALL',
-          callerId: data.callerId,
-          channelName: data.channelName,
-        }));
-      } else {
-        // Fallback: Trigger VoIP Push Notification (APNs/FCM)
-        triggerPushNotification(data.recipientId, data.callerId, data.channelName);
-      }
-    }
+  socket.on('join-room', (roomId) => {
+    socket.join(roomId);
+    socket.to(roomId).emit('user-joined', socket.id);
   });
+
+  socket.on('offer', ({ roomId, offer }) => {
+    socket.to(roomId).emit('offer', { from: socket.id, offer });
+  });
+
+  socket.on('answer', ({ roomId, answer }) => {
+    socket.to(roomId).emit('answer', { from: socket.id, answer });
+  });
+
+  socket.on('ice-candidate', ({ roomId, candidate }) => {
+    socket.to(roomId).emit('ice-candidate', { from: socket.id, candidate });
+  });
+
+  socket.on('disconnect', () => {
+    console.log('user disconnected:', socket.id);
+  });
+});
+
+const PORT = 4000;
+server.listen(PORT, () => {
+  console.log(`Signaling server running on :${PORT}`);
 });
