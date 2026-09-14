@@ -1,40 +1,72 @@
-// Server.js
-const express = require('express');
-const http = require('http');
-const { Server } = require('socket.io');
+// backend/Server.js
+const express = require("express");
+const http = require("http");
+const cors = require("cors");
+const { Server } = require("socket.io");
 
 const app = express();
+app.use(cors());
+
 const server = http.createServer(app);
+
 const io = new Server(server, {
-  cors: { origin: '*', methods: ['GET', 'POST'] }
+  cors: {
+    origin: "*",
+    methods: ["GET", "POST"]
+  }
 });
 
-io.on('connection', (socket) => {
-  console.log('user connected:', socket.id);
+// --- WebRTC + Chat Signaling ---
+io.on("connection", (socket) => {
+  console.log("User connected:", socket.id);
 
-  socket.on('join-room', (roomId) => {
+  // Join a room
+  socket.on("join-room", (roomId) => {
     socket.join(roomId);
-    socket.to(roomId).emit('user-joined', socket.id);
+    socket.to(roomId).emit("user-joined", socket.id);
   });
 
-  socket.on('offer', ({ roomId, offer }) => {
-    socket.to(roomId).emit('offer', { from: socket.id, offer });
+  // WebRTC offer
+  socket.on("offer", (data) => {
+    socket.to(data.room).emit("offer", {
+      sdp: data.sdp,
+      from: socket.id
+    });
   });
 
-  socket.on('answer', ({ roomId, answer }) => {
-    socket.to(roomId).emit('answer', { from: socket.id, answer });
+  // WebRTC answer
+  socket.on("answer", (data) => {
+    socket.to(data.room).emit("answer", {
+      sdp: data.sdp,
+      from: socket.id
+    });
   });
 
-  socket.on('ice-candidate', ({ roomId, candidate }) => {
-    socket.to(roomId).emit('ice-candidate', { from: socket.id, candidate });
+  // ICE candidates
+  socket.on("ice-candidate", (data) => {
+    socket.to(data.room).emit("ice-candidate", {
+      candidate: data.candidate,
+      from: socket.id
+    });
   });
 
-  socket.on('disconnect', () => {
-    console.log('user disconnected:', socket.id);
+  // Group chat
+  socket.on("chat-message", (data) => {
+    io.to(data.room).emit("chat-message", {
+      message: data.message,
+      from: socket.id
+    });
+  });
+
+  socket.on("disconnect", () => {
+    console.log("User disconnected:", socket.id);
   });
 });
 
-const PORT = 4000;
-server.listen(PORT, () => {
-  console.log(`Signaling server running on :${PORT}`);
+app.get("/", (req, res) => {
+  res.send("Expert Engine backend running");
+});
+
+server.listen(3001, () => {
+  console.log("Backend running on http://localhost:3001");
 });
