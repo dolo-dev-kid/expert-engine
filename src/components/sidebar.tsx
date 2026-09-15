@@ -15,6 +15,11 @@ export default function Sidebar({ onNavigate }) {
       <button onClick={() => onNavigate("feed")} style={btn}>📱</button>
       <button onClick={() => onNavigate("video")} style={btn}>🎥</button>
       <button onClick={() => onNavigate("chat")} style={btn}>💬</button>
+      <button onClick={() => onNavigate("profile")} style={btn}>👤</button>
+      <button onClick={() => onNavigate("friends")} style={btn}>👥</button>
+      <button onClick={() => onNavigate("servers")} style={btn}>🛡️</button>
+      <button onClick={() => onNavigate("dashboard")} style={btn}>⚙️</button>
+      <button onClick={() => onNavigate("overlay")} style={btn}>🎨</button>
     </div>
   );
 }
