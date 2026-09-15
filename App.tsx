@@ -1,9 +1,14 @@
 import { useState } from "react";
-import VideoChat from "./components/VideoChat";
-import Feed from "./components/Feed";
 import Sidebar from "./components/Sidebar";
 import Landing from "./components/Landing";
+import Feed from "./components/Feed";
+import VideoChat from "./components/VideoChat";
 import ChatPanel from "./components/ChatPanel";
+import Profile from "./components/Profile";
+import Friends from "./components/Friends";
+import Servers from "./components/Servers";
+import StreamDashboard from "./components/StreamDashboard";
+import Overlay from "./components/Overlay";
 
 export default function App() {
   const [page, setPage] = useState("landing");
@@ -17,9 +22,15 @@ export default function App() {
         {page === "feed" && <Feed />}
         {page === "video" && <VideoChat />}
         {page === "chat" && <ChatPanel />}
+        {page === "profile" && <Profile />}
+        {page === "friends" && <Friends />}
+        {page === "servers" && <Servers />}
+        {page === "dashboard" && <StreamDashboard />}
+        {page === "overlay" && <Overlay />}
       </div>
     </div>
   );
 }
+
 
   
