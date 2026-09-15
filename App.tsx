@@ -1,4 +1,3 @@
-// frontend/src/App.tsx
 import { useEffect, useRef, useState } from "react";
 import io from "socket.io-client";
 
@@ -159,4 +158,3 @@ export default function App() {
     </div>
   );
 }
-
